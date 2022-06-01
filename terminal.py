@@ -43,6 +43,8 @@ class PersonDB:
 
     def __init__(self, file_path):
         self.file_path = file_path
+        self.file_opener = open(self.file_path)
+        self.reader = csv.DictReader(self.file_opener)
 
         # HAVING A READING OF THE LIST ONLY IN THE INIT OF THE CLASS WON'T UPDATE THE LIST
         # AFTER DOING MODIFICATIONS WITH THE METHODS
@@ -57,15 +59,27 @@ class PersonDB:
                 return True
         return False
 
-    def write_persons(self, lines):
-        file_writer = open(self.file_path, 'w')
-        writer = csv.writer(file_writer)
-        writer.writerows(lines)
+    def write_persons(self, lines, mode):
+        if 'w' in mode:
+            file_writer = open(self.file_path, mode)
+            fieldnames = ['first_name', 'last_name', 'email', 'phone']
+            writer = csv.DictWriter(file_writer, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(lines)
+        if 'a' in mode:
+            file_writer = open(self.file_path, mode, newline='')
+            fieldnames = ['first_name', 'last_name', 'email', 'phone']
+            writer = csv.DictWriter(file_writer, fieldnames=fieldnames)
+            writer.writerow({'first_name': lines.first_name,
+                             'last_name': lines.last_name,
+                             'email': lines.email,
+                             'phone': lines.phone})
 
     def read_persons(self):
         return pd.read_csv(self.file_path)
 
     def sort(self, order_type, key):
+        print(self.read_persons())
         if key in self.read_persons():
             return self.read_persons().sort_values(by=[key], ascending=order_type)
         raise ValueError("Column %s not found" % key)
@@ -73,27 +87,19 @@ class PersonDB:
     def delete_person(self, first_name, last_name):
         lines = list()
         deleted_person_count = 0
-        file_reader = open(self.file_path, 'r')
-        # REQUIRES A COPY WITHOUT THE PERSON AND THEN REWRITE THE FILE
-        reader = csv.reader(file_reader)
-        for row in reader:
-            if first_name in row[0] and last_name in row[1]:
+        # # REQUIRES A COPY WITHOUT THE PERSON AND THEN REWRITE THE FILE
+        for row in self.reader:
+            if first_name in row['first_name'] and last_name in row['last_name']:
                 deleted_person_count += 1
             else:
                 lines.append(row)
-        self.write_persons(lines)
-        file_reader.close()
+        self.write_persons(lines, mode='w')
         return deleted_person_count
 
     def add_person(self, person_data):
         if self.person_exists_with_name(person_data.first_name, person_data.last_name):
             raise ValueError("Person %s %s already exists" % (person_data.first_name, person_data.last_name))
-        # WITH PANDAS IS REQUIRED .to_csv TO ADD A ROW TO A CSV
-        new_row = pd.DataFrame(person_data.dict(), index=[0])
-        new_row.to_csv(self.file_path,
-                       mode='a',
-                       index=False,
-                       header=False)
+        self.write_persons(person_data, mode='a')
         return self.read_persons()
 
     def find_person(self, value):
@@ -138,6 +144,7 @@ def main():
             print(person_db.sort(order_type, key))
         elif command == 'exit':
             print('Exiting the program')
+            person_db.file_opener.close()
             break
         else:
             print('Command not valid')
