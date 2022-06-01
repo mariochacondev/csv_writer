@@ -61,7 +61,6 @@ class PersonDB:
         file_writer = open(self.file_path, 'w')
         writer = csv.writer(file_writer)
         writer.writerows(lines)
-        file_writer.close()
 
     def read_persons(self):
         return pd.read_csv(self.file_path)
