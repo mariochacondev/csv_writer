@@ -47,16 +47,11 @@ class PersonDB:
     def __init__(self, file_path):
         self.file_path = file_path
 
-        # HAVING A READING OF THE LIST ONLY IN THE INIT OF THE CLASS WON'T UPDATE THE LIST
-        # AFTER DOING MODIFICATIONS WITH THE METHODS
-        # self.persons = pd.read_csv(self.file_path)
-
     def person_exists_with_name(self, first_name, last_name):
         for index, person in self.read().iterrows():
             if person_has_name(person, first_name, last_name):
                 return True
         return False
-
 
     def save(self, lines, mode):
         if 'w' in mode:
@@ -85,7 +80,6 @@ class PersonDB:
     def delete_person(self, first_name, last_name):
         lines = list()
         deleted_person_count = 0
-        # # REQUIRES A COPY WITHOUT THE PERSON AND THEN REWRITE THE FILE
         with open(self.file_path) as f:
             reader = csv.DictReader(f)
             for row in reader:
