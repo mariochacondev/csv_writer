@@ -39,78 +39,80 @@ class Person(BaseModel):
     phone: Optional[str]
 
 
-class PersonDB:
+def person_has_name(person, first_name, last_name):
+    return person['first_name'] == first_name and person['last_name'] == last_name
 
+
+class PersonDB:
     def __init__(self, file_path):
         self.file_path = file_path
-        self.file_opener = open(self.file_path)
-        self.reader = csv.DictReader(self.file_opener)
 
         # HAVING A READING OF THE LIST ONLY IN THE INIT OF THE CLASS WON'T UPDATE THE LIST
         # AFTER DOING MODIFICATIONS WITH THE METHODS
         # self.persons = pd.read_csv(self.file_path)
 
-    def person_has_name(self, person, first_name, last_name):
-        return person['first_name'] == first_name and person['last_name'] == last_name
-
     def person_exists_with_name(self, first_name, last_name):
-        for index, person in self.read_persons().iterrows():
-            if self.person_has_name(person, first_name, last_name):
+        for index, person in self.read().iterrows():
+            if person_has_name(person, first_name, last_name):
                 return True
         return False
 
-    def write_persons(self, lines, mode):
-        if 'w' in mode:
-            file_writer = open(self.file_path, mode)
-            fieldnames = ['first_name', 'last_name', 'email', 'phone']
-            writer = csv.DictWriter(file_writer, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(lines)
-        if 'a' in mode:
-            file_writer = open(self.file_path, mode, newline='')
-            fieldnames = ['first_name', 'last_name', 'email', 'phone']
-            writer = csv.DictWriter(file_writer, fieldnames=fieldnames)
-            writer.writerow({'first_name': lines.first_name,
-                             'last_name': lines.last_name,
-                             'email': lines.email,
-                             'phone': lines.phone})
 
-    def read_persons(self):
+    def save(self, lines, mode):
+        if 'w' in mode:
+            with open(self.file_path, mode) as f:
+                fieldnames = ['first_name', 'last_name', 'email', 'phone']
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(lines)
+        if 'a' in mode:
+            with open(self.file_path, mode, newline='') as f:
+                fieldnames = ['first_name', 'last_name', 'email', 'phone']
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writerow({'first_name': lines.first_name,
+                                 'last_name': lines.last_name,
+                                 'email': lines.email,
+                                 'phone': lines.phone})
+
+    def read(self):
         return pd.read_csv(self.file_path)
 
     def sort(self, order_type, key):
-        print(self.read_persons())
-        if key in self.read_persons():
-            return self.read_persons().sort_values(by=[key], ascending=order_type)
-        raise ValueError("Column %s not found" % key)
+        if key in self.read():
+            return self.read().sort_values(by=[key], ascending=order_type)
+        raise ValueError(f"Column {key} not found")
 
     def delete_person(self, first_name, last_name):
         lines = list()
         deleted_person_count = 0
         # # REQUIRES A COPY WITHOUT THE PERSON AND THEN REWRITE THE FILE
-        for row in self.reader:
-            if first_name in row['first_name'] and last_name in row['last_name']:
-                deleted_person_count += 1
-            else:
-                lines.append(row)
-        self.write_persons(lines, mode='w')
-        return deleted_person_count
+        with open(self.file_path) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if first_name in row['first_name'] and last_name in row['last_name']:
+                    deleted_person_count += 1
+                else:
+                    lines.append(row)
+            self.save(lines, mode='w')
+            return deleted_person_count
 
     def add_person(self, person_data):
         if self.person_exists_with_name(person_data.first_name, person_data.last_name):
-            raise ValueError("Person %s %s already exists" % (person_data.first_name, person_data.last_name))
-        self.write_persons(person_data, mode='a')
-        return self.read_persons()
+            raise ValueError(f"Person {person_data.first_name} {person_data.last_name} already exists")
+        self.save(person_data, mode='a')
+        return self.read()
 
     def find_person(self, value):
         person_found = []
-        for row in self.read_persons().itertuples(index=False):
-            if value in row:
-                person_found.append(row)
-        if person_found:
-            df = pd.DataFrame(person_found)
-            return df
-        raise ValueError("Person %s ... not found" % value)
+        with open(self.file_path) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if value in row['first_name'] or value in row['last_name']:
+                    person_found.append(row)
+            if person_found:
+                df = pd.DataFrame(person_found)
+                return df
+            raise ValueError(f"Person {value} ... not found")
 
 
 def main():
@@ -120,7 +122,7 @@ def main():
     while True:
         command = input('Enter your command: ')
         if command == 'list':
-            print(person_db.read_persons())
+            print(person_db.read())
         elif command == '+':
             person_data = Person(first_name=input('Enter first_name: ').capitalize(),
                                  last_name=input('Enter last_name: ').capitalize(),
@@ -144,7 +146,6 @@ def main():
             print(person_db.sort(order_type, key))
         elif command == 'exit':
             print('Exiting the program')
-            person_db.file_opener.close()
             break
         else:
             print('Command not valid')
