@@ -29,6 +29,8 @@ Hi... for info type the word info, or if you know the commands just enter your c
 ======================================================================================
 """
 
+# TO DO APPLY SAVE METHOD
+
 FILE_PATH = 'all_persons.csv'
 
 
@@ -46,6 +48,14 @@ def person_has_name(person, first_name, last_name):
 class PersonDB:
     def __init__(self, file_path):
         self.file_path = file_path
+        self.persons_list_copy = []
+        self.user_add_person = False
+        self.user_delete_person = False
+        self.added_persons = []
+        with open(self.file_path) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                self.persons_list_copy.append(row)
 
     def person_exists_with_name(self, first_name, last_name):
         for index, person in self.read().iterrows():
@@ -53,24 +63,25 @@ class PersonDB:
                 return True
         return False
 
-    def save(self, lines, mode):
-        if 'w' in mode:
-            with open(self.file_path, mode) as f:
+    def save(self):
+        if self.user_delete_person:
+            with open(self.file_path, 'w') as f:
                 fieldnames = ['first_name', 'last_name', 'email', 'phone']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
-                writer.writerows(lines)
-        if 'a' in mode:
-            with open(self.file_path, mode, newline='') as f:
+                writer.writerows(self.persons_list_copy)
+        if self.user_add_person:
+            with open(self.file_path, 'a', newline='') as f:
                 fieldnames = ['first_name', 'last_name', 'email', 'phone']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writerow({'first_name': lines.first_name,
-                                 'last_name': lines.last_name,
-                                 'email': lines.email,
-                                 'phone': lines.phone})
+                for elem in self.added_persons:
+                    writer.writerow({'first_name': elem['first_name'],
+                                     'last_name': elem['last_name'],
+                                     'email': elem['email'],
+                                     'phone': elem['phone']})
 
     def read(self):
-        return pd.read_csv(self.file_path)
+        return pd.DataFrame(self.persons_list_copy)
 
     def sort(self, order_type, key):
         if key in self.read():
@@ -78,22 +89,22 @@ class PersonDB:
         raise ValueError(f"Column {key} not found")
 
     def delete_person(self, first_name, last_name):
-        lines = list()
         deleted_person_count = 0
-        with open(self.file_path) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if first_name in row['first_name'] and last_name in row['last_name']:
-                    deleted_person_count += 1
-                else:
-                    lines.append(row)
-            self.save(lines, mode='w')
-            return deleted_person_count
+        # # REQUIRES A COPY WITHOUT THE PERSON AND THEN REWRITE THE FILE
+        for row in range(len(self.persons_list_copy)):
+            if first_name in self.persons_list_copy[row]['first_name'] and last_name in self.persons_list_copy[row]['last_name']:
+                deleted_person_count += 1
+                del self.persons_list_copy[row]
+                self.user_delete_person = True
+                break
+        return deleted_person_count
 
     def add_person(self, person_data):
         if self.person_exists_with_name(person_data.first_name, person_data.last_name):
-            raise ValueError(f"Person {person_data.first_name} {person_data.last_name} already exists")
-        self.save(person_data, mode='a')
+            return f"Person {person_data.first_name} {person_data.last_name} already exists"
+        self.persons_list_copy.append(dict(person_data))
+        self.added_persons.append(dict(person_data))
+        self.user_add_person = True
         return self.read()
 
     def find_person(self, value):
@@ -139,6 +150,11 @@ def main():
             order_type = True if 'asc' in order_type else False
             print(person_db.sort(order_type, key))
         elif command == 'exit':
+            if person_db.user_add_person or person_db.user_delete_person:
+                print('Before exiting the programme, would you like to save your changes?')
+                save_changes = input('Yes/No: ').capitalize()
+                if 'Yes' in save_changes:
+                    person_db.save()
             print('Exiting the program')
             break
         else:
