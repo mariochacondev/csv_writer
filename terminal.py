@@ -1,4 +1,3 @@
-import pandas as pd
 import csv
 from pydantic import BaseModel
 from typing import Optional
@@ -81,7 +80,6 @@ class PersonDB:
     def delete_person(self, first_name, last_name):
         deleted_person_count = 0
         for row in self.persons:
-            print(row)
             if first_name in row.first_name \
                     and last_name in row.last_name:
                 deleted_person_count += 1
