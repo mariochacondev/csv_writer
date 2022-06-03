@@ -29,7 +29,6 @@ Hi... for info type the word info, or if you know the commands just enter your c
 ======================================================================================
 """
 
-# TO DO APPLY SAVE METHOD
 
 FILE_PATH = 'all_persons.csv'
 
@@ -49,9 +48,9 @@ class PersonDB:
     def __init__(self, file_path):
         self.file_path = file_path
         self.persons_list_copy = []
+        self.added_persons = []
         self.user_add_person = False
         self.user_delete_person = False
-        self.added_persons = []
         with open(self.file_path) as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -90,7 +89,6 @@ class PersonDB:
 
     def delete_person(self, first_name, last_name):
         deleted_person_count = 0
-        # # REQUIRES A COPY WITHOUT THE PERSON AND THEN REWRITE THE FILE
         for row in range(len(self.persons_list_copy)):
             if first_name in self.persons_list_copy[row]['first_name'] and last_name in self.persons_list_copy[row]['last_name']:
                 deleted_person_count += 1
@@ -109,15 +107,13 @@ class PersonDB:
 
     def find_person(self, value):
         person_found = []
-        with open(self.file_path) as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if value in row['first_name'] or value in row['last_name']:
-                    person_found.append(row)
-            if person_found:
-                df = pd.DataFrame(person_found)
-                return df
-            raise ValueError(f"Person {value} ... not found")
+        for elem in self.persons_list_copy:
+            if value in elem['first_name'] or value in elem['last_name']:
+                person_found.append(elem)
+        if person_found:
+            df = pd.DataFrame(person_found)
+            return df
+        raise ValueError(f"Person {value} ... not found")
 
 
 def main():
