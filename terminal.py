@@ -38,22 +38,19 @@ class Person(BaseModel):
     email: str
     phone: Optional[str]
 
-    @staticmethod
-    def person_has_name(row, first_name, last_name):
-        return row.first_name == first_name and row.last_name == last_name
+    def person_has_name(self, first_name, last_name):
+        return self.first_name == first_name and self.last_name == last_name
 
 
 class PersonDB:
     def __init__(self, file_path):
         self.file_path = file_path
-        self.p = Person
-        self.added_persons = []
         self.user_modifications = False
         self.persons: list[Person] = self.read()
 
     def person_exists_with_name(self, first_name, last_name):
         for row in self.persons:
-            if self.p.person_has_name(row, first_name, last_name):
+            if row.person_has_name(first_name, last_name):
                 return True
         return False
 
@@ -106,7 +103,8 @@ def main():
     while True:
         command = input('Enter your command: ')
         if command == 'list':
-            print(person_db.persons)
+            for elem in person_db.persons:
+                print(elem)
         elif command == '+':
             person_data = Person(first_name=input('Enter first_name: ').capitalize(),
                                  last_name=input('Enter last_name: ').capitalize(),
