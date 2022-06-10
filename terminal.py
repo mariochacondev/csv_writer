@@ -30,7 +30,6 @@ GREET = """
 Hi... for info type the word info, or if you know the commands just enter your command
 ======================================================================================
 """
-# AGE PEOPLE, AVERAGE AGE :: METHODS
 
 
 class PersonNotFound(Exception):
