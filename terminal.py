@@ -39,6 +39,9 @@ class PersonNotFound(Exception):
 class PersonAlreadyExists(Exception):
     pass
 
+class OrderNotValid(Exception):
+    pass
+
 
 class Person(BaseModel):
     first_name: str
@@ -116,7 +119,19 @@ class PersonDB:
         for row in self.persons:
             persons_age.append(int(row.age))
         age_average = mean(persons_age)
-        return str(round(age_average, 2))
+        return age_average
+
+    def order_persons(self, order_type, col):
+        order = 0
+        if col not in Person.__fields__:
+            raise OrderNotValid('Column not valid')
+        if 'asc' in order_type:
+            order += 1
+        elif 'dsc' in order_type:
+            order = -1
+        else:
+            raise OrderNotValid('Order type not valid')
+        return [Person.parse_obj(person) for person in self.db.users.find().sort(col, order)]
 
 
 def main():
@@ -163,6 +178,14 @@ def main():
                 print(e)
         elif command == 'stats':
             print(f'The age average of the persons is {person_db.age_average()}')
+        elif command == 'order':
+            print(ORDERING_PALETTE)
+            order_type = input('Enter order type: ')
+            col = input('Enter column to order by ex: first_name: ')
+            try:
+                print(person_db.order_persons(order_type, col))
+            except Exception as e:
+                print(e)
         elif command == 'exit':
             if user_modifications:
                 print('Before exiting the programme, would you like to save your changes?')
