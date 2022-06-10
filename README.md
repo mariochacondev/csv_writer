@@ -1,7 +1,5 @@
-CSV WRITER using 'terminal' commands. Allows to save, find, delete and order a DB of people in a csv file
+Customized 'terminal'. Allows to save, find, delete persons in a DB. Calculate age by persons name and last name, and calculate age average of all the persons.
 
 Packages:
-- Pandas
-- CSV
-- Typing
 - Pydantic
+- MongoDB
